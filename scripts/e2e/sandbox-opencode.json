@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "fake/fake-model",
+  "providers": {
+    "fake": {
+      "name": "Fake",
+      "env": ["FAKE_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "http://127.0.0.1:47123/v1" },
+      "models": {
+        "fake-model": {
+          "name": "Fake model",
+          "capabilities": { "tools": true, "reasoning": { "supported": true, "effort": ["low", "medium", "high"] } }
+        }
+      }
+    }
+  },
+  "permissions": [{ "action": "*", "resource": "*", "effect": "allow" }],
+  "plugins": ["file:///D:/tools/opencode-roles/plugin"]
+}
