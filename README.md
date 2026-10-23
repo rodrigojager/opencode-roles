@@ -13,12 +13,10 @@ Tested on OpenCode 2.1.3 and 2.1.4.
 
 ## Install
 
-Clone this repository, then list its `plugin` folder in both OpenCode config
-files, keeping your other plugins:
-
-- `~/.config/opencode/opencode.json` (server side: the role in the system
-  prompt, `--role` for subagents, the `roles` tool)
-- `~/.config/opencode/cli.json` (TUI side: picker, indicator, `alt+r`)
+Clone this repository, then list its `plugin` folder in
+`~/.config/opencode/opencode.json`, keeping your other plugins. That one entry
+loads both parts: the server side (the role in the system prompt, `--role` for
+subagents, the `roles` tool) and the TUI side (picker, indicator, `alt+r`).
 
 ```json
 {
