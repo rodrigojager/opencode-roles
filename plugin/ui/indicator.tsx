@@ -1,8 +1,8 @@
 /** @jsxImportSource @opentui/solid */
 // Role indicator on the prompt's agent · model · effort line:
 //   Build · GPT-5.5 OpenAI · high · Role: Historian
-// Active role: "Role:" in the theme's base text colour and the role name in ROLE_NAME_COLOR, both
-// bold like the effort. No role: muted "Role: default". OpenCode 2.1.x has no plugin slot on that
+// Active role: "Role:" in the theme's base text colour and the role name in the theme's accent
+// colour (the picker's selection colour), both bold like the effort; both follow a theme switch. No role: muted "Role: default". OpenCode 2.1.x has no plugin slot on that
 // line, so the plugin
 // mounts an anchor in its own per-prompt `prompt.footer.status` slot, walks from it to the sibling
 // metadata row, and adds one text node there. If that structure is not found (another OpenCode
@@ -12,7 +12,6 @@ import {
   BoxRenderable,
   bold,
   fg,
-  RGBA,
   type Renderable,
   type RenderContext,
   type StyledText,
@@ -23,9 +22,6 @@ import {
 import { useRenderer } from "@opentui/solid"
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js"
 
-/** The active role's name, the same in every theme (chosen by the user). */
-export const ROLE_NAME_COLOR = "#d3542b"
-
 export function roleLabel(name: string | undefined) {
   return name ? `Role: ${name}` : "Role: default"
 }
@@ -34,7 +30,8 @@ export function roleColors(theme: ResolvedTheme) {
   return {
     /** "Role:" when a role is active: the theme's default text colour. */
     label: theme.text.base,
-    active: RGBA.fromHex(ROLE_NAME_COLOR),
+    /** The active role's name: the theme's accent, like the picker's selected role. */
+    active: theme.hue.accent[200],
     idle: theme.text.muted,
     separator: theme.text.muted,
   }

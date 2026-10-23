@@ -105,7 +105,8 @@ const agentRequest = (marker) =>
 const systemText = (r) => r.body.messages.filter((m) => m.role === "system").map((m) => (typeof m.content === "string" ? m.content : m.content.map((p) => p.text).join(""))).join("\n")
 
 const KEY_ALT_R = "\x1b" + "r" // what a terminal sends for alt+r
-const ROLE_RED = "d3542b" // role name, the same in every theme
+/** The theme's accent: the picker's selection colour, read from the screen; the role name uses it too. */
+let ACCENT
 const ORANGE = "eeeeee" // orng text.base, used for "Role:"
 const MUTED = "808080" // orng text.muted
 /** The prompt's agent · model · effort line (the last screen line that contains "Build · "). */
@@ -152,6 +153,9 @@ try {
   await sleep(300)
   snap("alt+r on home")
   check("alt+r opens the picker on the home screen", text().includes("› default (no role) · active"))
+  ACCENT = find("› ")?.fg
+  // orng's accent is neutral (#eeeeee, like its text); the opencode theme's is purple.
+  check("picker: the selected role in the theme's accent, not muted", !!ACCENT && ACCENT !== MUTED, ACCENT)
   await press("esc")
   await sleep(500)
 
@@ -188,7 +192,7 @@ try {
   snap("after pick on home")
   role = roleOnMetaLine()
   check("home pick opens a new session; 'Role: Root Cause Debugger' on the model line", !text().includes("Ask anything") && /· Role: Root Cause Debugger$/.test(role?.text ?? ""), role?.text)
-  check(`colours: 'Role:' #${ORANGE} (theme base text), name #${ROLE_RED}, both bold, no background`, role?.fg === ORANGE && !!role?.bold && role?.name?.fg === ROLE_RED && !!role?.name?.bold && role?.name?.bg === role?.bg && role?.bg !== "29213d", JSON.stringify(role))
+  check(`colours: 'Role:' #${ORANGE} (theme base text), name in the accent #${ACCENT} (like the picker's selection), both bold, no background`, role?.fg === ORANGE && !!role?.bold && role?.name?.fg === ACCENT && !!role?.name?.bold && role?.name?.bg === role?.bg && role?.bg !== "29213d", JSON.stringify(role))
   check("still no role text in the footer row", !footerLine()?.includes("Role"), footerLine()?.trim())
   check("exactly one 'Role:' on screen", lines().filter((l) => l.includes("Role:")).length === 1)
 
@@ -225,7 +229,7 @@ try {
   await sleep(1000)
   await waitToastsGone()
   role = roleOnMetaLine()
-  check("/role historian activates directly (model line updates)", /· Role: Historian$/.test(role?.text ?? "") && role?.fg === ORANGE && role?.name?.fg === ROLE_RED, JSON.stringify(role))
+  check("/role historian activates directly (model line updates)", /· Role: Historian$/.test(role?.text ?? "") && role?.fg === ORANGE && role?.name?.fg === ACCENT, JSON.stringify(role))
   await type("hello E2E-TUI-3")
   await press("enter")
   await sleep(1500)

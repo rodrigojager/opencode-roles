@@ -83,8 +83,9 @@ reserved). Subfolders are categories when the frontmatter has none.
    …                         ctrl+p commands  alt+r roles
 ```
 
-- **Indicator:** `Role:` in the theme's text colour and the name in `#d3542b`,
-  both bold; `Role: default` muted. Clicking it opens the picker.
+- **Indicator:** `Role:` in the theme's text colour and the name in the
+  theme's accent colour (the picker's selection colour), both bold; `Role:
+  default` muted. Both follow a theme switch. Clicking it opens the picker.
 - **Hint:** `alt+r roles` after OpenCode's `ctrl+p commands`, in the same
   style, on terminals at least 100 columns wide. To rebind the key, set
   `"roles.picker"` under `keybinds` in `cli.json`; the hint follows.

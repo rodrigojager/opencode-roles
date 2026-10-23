@@ -5,8 +5,7 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { TextAttributes } from "@opentui/core"
 import { testRender } from "@opentui/solid"
 import { createSignal } from "solid-js"
-import { contrast, fromHex, toHex } from "../plugin/src/color.ts"
-import { ROLE_NAME_COLOR, RoleIndicator, roleColors } from "../plugin/ui/indicator.tsx"
+import { RoleIndicator, roleColors } from "../plugin/ui/indicator.tsx"
 import { hex, testTheme } from "./tui-helpers.ts"
 
 let mounted: { renderer: { destroy(): void } } | undefined
@@ -15,17 +14,15 @@ afterEach(() => {
   mounted = undefined
 })
 
-const toRgb = (c: { r: number; g: number; b: number }) => ({ r: c.r, g: c.g, b: c.b })
-const spanHex = (span: { fg: { r: number; g: number; b: number } }) => toHex(toRgb(span.fg))
+const spanHex = (span: { fg: { toInts(): number[] } }) => `#${span.fg.toInts().slice(0, 3).map((v) => v.toString(16).padStart(2, "0")).join("")}`
+/** The test theme's accent (the picker's selection colour). */
+const ACCENT = "#ff8800"
 
 describe("indicator colours", () => {
-  test("role name #d3542b in every theme, readable on a dark prompt line (#1e1e1e)", () => {
-    expect(toHex(toRgb(roleColors(testTheme).active))).toBe(ROLE_NAME_COLOR)
-    expect(contrast(fromHex(ROLE_NAME_COLOR), fromHex("#1e1e1e"))).toBeGreaterThan(4)
-  })
-  test("from the running theme: 'Role:' = base text, default = muted", () => {
+  test("from the running theme: 'Role:' = base text, the name = accent, default = muted", () => {
     const colors = roleColors(testTheme)
     expect(colors.label.equals(hex("#eeeeee"))).toBe(true)
+    expect(colors.active.equals(hex(ACCENT))).toBe(true)
     expect(colors.idle.equals(hex("#999999"))).toBe(true)
   })
 })
@@ -75,13 +72,13 @@ async function render(name: string | undefined, withTextarea = true) {
   return { setup, frame, spans, setRole }
 }
 
-type Span = { text: string; fg: { r: number; g: number; b: number }; bg: { a: number }; attributes: number }
-/** "Role:" in base text, the name in ROLE_NAME_COLOR, both bold, no background. */
-function expectActiveSpans(spans: Span[]) {
+type Span = { text: string; fg: { toInts(): number[] }; bg: { a: number }; attributes: number }
+/** "Role:" in base text, the name in the accent, both bold, no background. */
+function expectActiveSpans(spans: Span[], accent = ACCENT) {
   const label = spans.find((span) => span.text.includes("Role:"))!
   const name = spans.find((span) => span.text.includes("Historian"))!
   expect(spanHex(label)).toBe("#eeeeee")
-  expect(spanHex(name)).toBe(ROLE_NAME_COLOR)
+  expect(spanHex(name)).toBe(accent)
   for (const span of [label, name]) {
     expect(span.attributes & TextAttributes.BOLD).toBeTruthy()
     expect(span.bg.a).toBe(0) // plain text, no background block
@@ -89,7 +86,7 @@ function expectActiveSpans(spans: Span[]) {
 }
 
 describe("indicator on the agent · model · effort line", () => {
-  test("active role follows the effort on the same line: 'Role:' base, name #d3542b, bold; nothing in the footer", async () => {
+  test("active role follows the effort on the same line: 'Role:' base, name in the accent, bold; nothing in the footer", async () => {
     const r = await render("Historian")
     const lines = await r.frame()
     const meta = lines.find((line) => line.includes("Build"))!
@@ -114,6 +111,41 @@ describe("indicator on the agent · model · effort line", () => {
     r.setRole(undefined)
     lines = await r.frame()
     expect(lines.find((line) => line.includes("Build"))).toContain("· high · Role: default")
+  })
+
+  test("a theme switch recolours the name on the line", async () => {
+    const [theme, setTheme] = createSignal(testTheme)
+    const switched = { ...(testTheme as object), hue: { accent: { 200: hex("#9d7cd8") } } } as typeof testTheme
+    const setup = await testRender(
+      () => (
+        <box width="100%">
+          <box>
+            <box>
+              <textarea height={1} />
+              <box flexDirection="row" justifyContent="space-between" gap={1}>
+                <box flexDirection="row" flexGrow={1}>
+                  <text>Build</text>
+                </box>
+              </box>
+            </box>
+          </box>
+          <box flexDirection="row">
+            <RoleIndicator name={() => "Historian"} theme={theme()} retryMs={5} />
+          </box>
+        </box>
+      ),
+      { width: 60, height: 8 },
+    )
+    mounted = setup
+    const spans = async () => {
+      for (let i = 0; i < 3; i++) await setup.renderOnce()
+      await Bun.sleep(30)
+      await setup.renderOnce()
+      return setup.captureSpans().lines.flatMap((line) => line.spans)
+    }
+    expectActiveSpans(await spans())
+    setTheme(switched)
+    expectActiveSpans(await spans(), "#9d7cd8")
   })
 
   test("unmounting removes the text and restores the host row", async () => {
